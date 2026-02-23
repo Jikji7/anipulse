@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import AnimeCard from '@/components/AnimeCard';
 import NewsCard from '@/components/NewsCard';
-import { getStudio } from '@/lib/anilist';
+import { getStudio, FAMOUS_STUDIO_IDS } from '@/lib/anilist';
 import { filterNewsByStudio } from '@/lib/news';
 import { NewsItem, Studio } from '@/lib/types';
 
@@ -15,6 +15,7 @@ export default async function StudioDetailPage({ params }: Params) {
   const id = parseInt(idStr, 10);
   if (isNaN(id)) notFound();
 
+  const studioMeta = FAMOUS_STUDIO_IDS.find((s) => s.id === id);
   let studio: Studio | undefined;
   let relatedNews: NewsItem[] = [];
 
@@ -62,6 +63,16 @@ export default async function StudioDetailPage({ params }: Params) {
               className="text-purple-400 hover:text-purple-300 text-sm mt-1 inline-block"
             >
               공식 홈페이지 →
+            </a>
+          )}
+          {studioMeta?.twitter && (
+            <a
+              href={studioMeta.twitter}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sky-400 hover:text-sky-300 text-sm mt-1 ml-4 inline-block"
+            >
+              🐦 공식 X(트위터) →
             </a>
           )}
         </div>

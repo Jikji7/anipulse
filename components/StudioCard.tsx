@@ -5,9 +5,10 @@ import { Studio } from '@/lib/types';
 
 interface StudioCardProps {
   studio: Studio;
+  twitter?: string;
 }
 
-export default function StudioCard({ studio }: StudioCardProps) {
+export default function StudioCard({ studio, twitter }: StudioCardProps) {
   const coverAnime = studio.media?.nodes?.[0];
 
   return (
@@ -33,7 +34,21 @@ export default function StudioCard({ studio }: StudioCardProps) {
       )}
 
       <div className="p-4">
-        <h3 className="text-white font-bold text-lg">{studio.name}</h3>
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-white font-bold text-lg truncate">{studio.name}</h3>
+          {twitter && (
+            <a
+              href={twitter}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex-shrink-0 text-gray-400 hover:text-sky-400 transition-colors"
+              title="공식 X(트위터)"
+            >
+              𝕏
+            </a>
+          )}
+        </div>
         {coverAnime && (
           <p className="text-gray-400 text-xs mt-1">
             대표작: {coverAnime.title?.romaji || '정보 없음'}
