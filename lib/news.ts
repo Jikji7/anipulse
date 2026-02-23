@@ -5,7 +5,7 @@ import { NewsItem } from './types';
 export const RSS_FEEDS = [
   { url: 'https://www.animenewsnetwork.com/all/rss.xml', source: 'ANN' as const },
   { url: 'https://myanimelist.net/rss/news.xml', source: 'MAL' as const },
-  { url: 'http://feeds.feedburner.com/crunchyroll/rss/news', source: 'CR' as const },
+  { url: 'https://cr-news-api-service.prd.crunchyrollsvc.com/v1/en-US/rss', source: 'CR' as const },
 ];
 
 // 뉴스 제목/내용에서 제작사 이름으로 필터링

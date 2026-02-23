@@ -1,7 +1,11 @@
 // 뉴스 카드 컴포넌트
+'use client';
+
+import { useState } from 'react';
 import { NewsItem } from '@/lib/types';
 import { truncateDescription } from '@/lib/news';
 import Image from 'next/image';
+import TranslateButton from './TranslateButton';
 
 interface NewsCardProps {
   news: NewsItem;
@@ -22,6 +26,13 @@ const sourceFullName: Record<string, string> = {
 };
 
 export default function NewsCard({ news }: NewsCardProps) {
+  const [translatedTitle, setTranslatedTitle] = useState<string | null>(null);
+  const [translatedDesc, setTranslatedDesc] = useState<string | null>(null);
+
+  const displayTitle = translatedTitle ?? news.title;
+  const displayDesc = translatedDesc ?? news.description;
+  const isTranslated = translatedTitle !== null;
+
   const formattedDate = new Date(news.date).toLocaleDateString('ko-KR', {
     year: 'numeric',
     month: 'long',
@@ -49,25 +60,40 @@ export default function NewsCard({ news }: NewsCardProps) {
       )}
 
       <div className="p-4">
-        {/* 출처 배지 + 날짜 */}
+        {/* 출처 배지 + 날짜 + 번역 버튼 */}
         <div className="flex items-center justify-between mb-2">
-          <span
-            className={`text-xs font-semibold px-2 py-1 rounded-full text-white ${sourceBadgeColor[news.source] || 'bg-gray-600'}`}
-            title={sourceFullName[news.source]}
-          >
-            {news.source}
-          </span>
+          <div className="flex items-center gap-2">
+            <span
+              className={`text-xs font-semibold px-2 py-1 rounded-full text-white ${sourceBadgeColor[news.source] || 'bg-gray-600'}`}
+              title={sourceFullName[news.source]}
+            >
+              {news.source}
+            </span>
+            <TranslateButton
+              title={news.title}
+              description={news.description}
+              onTranslated={(t, d) => {
+                setTranslatedTitle(t);
+                setTranslatedDesc(d);
+              }}
+              onReset={() => {
+                setTranslatedTitle(null);
+                setTranslatedDesc(null);
+              }}
+              isTranslated={isTranslated}
+            />
+          </div>
           <span className="text-xs text-gray-400">{formattedDate}</span>
         </div>
 
         {/* 제목 */}
         <h3 className="text-white font-semibold text-sm mb-2 line-clamp-2 leading-snug">
-          {news.title}
+          {displayTitle}
         </h3>
 
         {/* 요약 */}
         <p className="text-gray-400 text-xs line-clamp-3">
-          {truncateDescription(news.description)}
+          {truncateDescription(displayDesc)}
         </p>
       </div>
     </a>

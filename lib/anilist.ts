@@ -17,28 +17,43 @@ export const FAMOUS_STUDIO_IDS = [
   { id: 18, name: 'Toei Animation' },
 ];
 
-// GraphQL 쿼리 실행 함수
+// GraphQL 쿼리 실행 함수 (최대 3회 재시도)
 async function fetchAniList(query: string, variables: Record<string, unknown> = {}) {
-  const response = await fetch(ANILIST_API, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    body: JSON.stringify({ query, variables }),
-    next: { revalidate: 3600 }, // 1시간 캐시
-  });
+  const MAX_RETRIES = 3;
+  let lastError: Error | null = null;
 
-  if (!response.ok) {
-    throw new Error(`AniList API 오류: ${response.status}`);
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await fetch(ANILIST_API, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ query, variables }),
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        throw new Error(`AniList API 오류: ${response.status}`);
+      }
+
+      const json = await response.json();
+      if (json.errors) {
+        throw new Error(`GraphQL 오류: ${json.errors[0].message}`);
+      }
+
+      return json.data;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.error(`fetchAniList 시도 ${attempt}/${MAX_RETRIES} 실패:`, lastError.message);
+      if (attempt < MAX_RETRIES) {
+        await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt - 1) * 1000));
+      }
+    }
   }
 
-  const json = await response.json();
-  if (json.errors) {
-    throw new Error(`GraphQL 오류: ${json.errors[0].message}`);
-  }
-
-  return json.data;
+  throw lastError ?? new Error('AniList API 호출 실패');
 }
 
 // 제작사 상세 정보 가져오기

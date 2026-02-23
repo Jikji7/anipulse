@@ -1,4 +1,5 @@
 import StudioCard from '@/components/StudioCard';
+import StudiosFallback from '@/components/StudiosFallback';
 import { getStudios, FAMOUS_STUDIO_IDS } from '@/lib/anilist';
 import { Studio } from '@/lib/types';
 
@@ -11,6 +12,7 @@ export default async function StudiosPage() {
     studios = await getStudios(FAMOUS_STUDIO_IDS.map((s) => s.id));
   } catch (e) {
     error = e instanceof Error ? e.message : '제작사 정보를 불러오는 데 실패했습니다.';
+    console.error('제작사 페이지 로딩 오류:', e);
   }
 
   return (
@@ -21,15 +23,15 @@ export default async function StudiosPage() {
         <p className="text-gray-400">유명 애니메이션 제작사들의 대표작을 확인하세요</p>
       </div>
 
-      {/* 에러 */}
-      {error && (
-        <div className="bg-red-900/50 border border-red-700 rounded-xl p-6 text-center">
-          <p className="text-red-300">{error}</p>
-        </div>
-      )}
+      {/* 에러 fallback UI */}
+      {error && <StudiosFallback message={error} />}
 
       {/* 제작사 그리드 */}
-      {!error && (
+      {!error && studios.length === 0 && (
+        <StudiosFallback message="제작사 정보를 불러오는 데 실패했습니다. 잠시 후 다시 시도해 주세요." />
+      )}
+
+      {!error && studios.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {studios.map((studio) => (
             <StudioCard key={studio.id} studio={studio} />

@@ -14,6 +14,38 @@ const parser = new Parser({
   },
 });
 
+// 에피소드 업데이트 제목 패턴 (뉴스가 아닌 시청 링크)
+const EPISODE_PATTERNS = [
+  /- Episode \d/i,
+  /- \d+화/,
+  /Episode \d+/i,
+  /\(러시아어/,
+  /\(독일어/,
+  /\(영어 더빙\)/,
+  /Season \d+ - \d+/i,
+  /[\u0400-\u04FF]/, // 키릴 문자 (러시아어 등)
+  /[\u0600-\u06FF]/, // 아랍 문자
+];
+
+// 제목이 에피소드 업데이트인지 확인
+function isEpisodeTitle(title: string): boolean {
+  return EPISODE_PATTERNS.some((pattern) => pattern.test(title));
+}
+
+// HTML 태그 및 엔티티 제거
+function stripHtml(text: string): string {
+  return text
+    .replace(/<[^>]*>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // 각 RSS 피드 아이템에서 썸네일 추출
 function extractThumbnail(item: Record<string, unknown>): string | undefined {
   if (item.mediaThumbnail && typeof item.mediaThumbnail === 'object') {
@@ -49,15 +81,17 @@ export async function GET() {
     const results = await Promise.allSettled(
       RSS_FEEDS.map(async ({ url, source }) => {
         const feed = await parser.parseURL(url);
-        return feed.items.map((item, idx) => ({
-          id: `${source}-${idx}-${Date.now()}`,
-          title: item.title || '제목 없음',
-          description: item.contentSnippet || item.content || item.summary || '',
-          link: item.link || '#',
-          source,
-          date: item.pubDate || item.isoDate || new Date().toISOString(),
-          thumbnail: extractThumbnail(item as unknown as Record<string, unknown>),
-        }));
+        return feed.items
+          .filter((item) => !isEpisodeTitle(item.title || ''))
+          .map((item, idx) => ({
+            id: `${source}-${idx}-${Date.now()}`,
+            title: item.title || '제목 없음',
+            description: stripHtml(item.contentSnippet || item.content || item.summary || ''),
+            link: item.link || '#',
+            source,
+            date: item.pubDate || item.isoDate || new Date().toISOString(),
+            thumbnail: extractThumbnail(item as unknown as Record<string, unknown>),
+          }));
       })
     );
 
