@@ -5,12 +5,13 @@ import { searchAnime, searchStudios } from '@/lib/anilist';
 import { Anime, Studio } from '@/lib/types';
 
 interface SearchPageProps {
-  searchParams: { q?: string };
+  searchParams: Promise<{ q?: string }>;
 }
 
 // 검색 페이지 (서버 컴포넌트)
 export default async function SearchPage({ searchParams }: SearchPageProps) {
-  const query = searchParams.q || '';
+  const { q } = await searchParams;
+  const query = q || '';
   let animes: Anime[] = [];
   let studios: Studio[] = [];
   let error: string | null = null;

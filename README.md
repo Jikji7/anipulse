@@ -4,7 +4,7 @@
 
 ## 기술 스택
 
-- **Framework**: Next.js 14 (App Router)
+- **Framework**: Next.js 15 (App Router)
 - **Styling**: Tailwind CSS
 - **Language**: TypeScript
 - **API**: AniList GraphQL API, RSS 뉴스 피드

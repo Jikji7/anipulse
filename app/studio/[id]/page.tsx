@@ -6,12 +6,13 @@ import { filterNewsByStudio } from '@/lib/news';
 import { NewsItem, Studio } from '@/lib/types';
 
 interface Params {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 // 제작사 상세 페이지 (서버 컴포넌트)
 export default async function StudioDetailPage({ params }: Params) {
-  const id = parseInt(params.id, 10);
+  const { id: idStr } = await params;
+  const id = parseInt(idStr, 10);
   if (isNaN(id)) notFound();
 
   let studio: Studio | undefined;
