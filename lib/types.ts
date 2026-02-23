@@ -1,3 +1,6 @@
+// 뉴스 카테고리 타입
+export type NewsCategory = 'ALL' | 'ANIME' | 'LIGHTNOVEL' | 'MANGA';
+
 // 뉴스 아이템 타입
 export interface NewsItem {
   id: string;
@@ -7,6 +10,7 @@ export interface NewsItem {
   source: 'ANN' | 'MAL' | 'CR';
   date: string;
   thumbnail?: string;
+  category?: NewsCategory;
 }
 
 // 애니메이션 타입

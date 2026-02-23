@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import NewsCard from '@/components/NewsCard';
 import NewsFilter from '@/components/NewsFilter';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
-import { NewsItem } from '@/lib/types';
+import { NewsItem, NewsCategory } from '@/lib/types';
 
 type Source = 'ALL' | 'ANN' | 'MAL' | 'CR';
 type Lang = 'KR' | 'EN' | 'JP';
@@ -29,6 +29,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeSource, setActiveSource] = useState<Source>('ALL');
+  const [activeCategory, setActiveCategory] = useState<NewsCategory>('ALL');
   const [page, setPage] = useState(1);
   const [globalLang, setGlobalLang] = useState<Lang | null>(null);
   const [translating, setTranslating] = useState(false);
@@ -55,26 +56,16 @@ export default function HomePage() {
     fetchNews();
   }, [fetchNews]);
 
-  const handleGlobalLang = async (lang: Lang) => {
-    if (globalLang === lang) {
-      setGlobalLang(null);
-      setTranslatedNews(new Map());
-      return;
-    }
-
-    setGlobalLang(lang);
-    setTranslating(true);
-
-    const targetCode = LANG_CODES[lang];
-    const newMap = new Map<string, { title: string; description: string }>();
-
-    // 현재 페이지에 표시되는 뉴스만 번역 (최대 5개씩 병렬 처리)
-    const filtered = activeSource === 'ALL' ? allNews : allNews.filter((n) => n.source === activeSource);
-    const visible = filtered.slice(0, page * PAGE_SIZE);
+  // 번역 헬퍼: 아이템 목록을 번역하여 Map에 추가
+  const translateItems = useCallback(async (
+    items: NewsItem[],
+    targetCode: string,
+    baseMap: Map<string, { title: string; description: string }>
+  ) => {
+    const newMap = new Map(baseMap);
     const CHUNK_SIZE = 5;
-
-    for (let i = 0; i < visible.length; i += CHUNK_SIZE) {
-      const chunk = visible.slice(i, i + CHUNK_SIZE);
+    for (let i = 0; i < items.length; i += CHUNK_SIZE) {
+      const chunk = items.slice(i, i + CHUNK_SIZE);
       await Promise.allSettled(
         chunk.map(async (item) => {
           try {
@@ -96,15 +87,41 @@ export default function HomePage() {
         })
       );
     }
+    return newMap;
+  }, []);
 
+  const handleGlobalLang = async (lang: Lang) => {
+    if (globalLang === lang) {
+      setGlobalLang(null);
+      setTranslatedNews(new Map());
+      return;
+    }
+
+    setGlobalLang(lang);
+    setTranslating(true);
+
+    const targetCode = LANG_CODES[lang];
+
+    // 현재 페이지에 표시되는 뉴스만 번역
+    const filtered = applyFilters(allNews, activeSource, activeCategory);
+    const visible = filtered.slice(0, page * PAGE_SIZE);
+
+    const newMap = await translateItems(visible, targetCode, new Map());
     setTranslatedNews(newMap);
     setTranslating(false);
   };
 
-  // 소스 필터 적용
-  const filtered = activeSource === 'ALL'
-    ? allNews
-    : allNews.filter((n) => n.source === activeSource);
+  // 필터 적용 헬퍼
+  function applyFilters(news: NewsItem[], source: Source, category: NewsCategory): NewsItem[] {
+    let result = source === 'ALL' ? news : news.filter((n) => n.source === source);
+    if (category !== 'ALL') {
+      result = result.filter((n) => n.category === category);
+    }
+    return result;
+  }
+
+  // 소스/카테고리 필터 적용
+  const filtered = applyFilters(allNews, activeSource, activeCategory);
 
   // 페이지네이션
   const paginated = filtered.slice(0, page * PAGE_SIZE);
@@ -113,6 +130,31 @@ export default function HomePage() {
   const handleSourceChange = (source: Source) => {
     setActiveSource(source);
     setPage(1);
+  };
+
+  const handleCategoryChange = (category: NewsCategory) => {
+    setActiveCategory(category);
+    setPage(1);
+  };
+
+  // "더보기": 번역 모드가 활성이면 새 항목도 자동 번역
+  const handleLoadMore = async () => {
+    const newPage = page + 1;
+    setPage(newPage);
+
+    if (globalLang) {
+      const targetCode = LANG_CODES[globalLang];
+      const newItems = filtered
+        .slice(page * PAGE_SIZE, newPage * PAGE_SIZE)
+        .filter((item) => !translatedNews.has(item.id));
+
+      if (newItems.length > 0) {
+        setTranslating(true);
+        const newMap = await translateItems(newItems, targetCode, translatedNews);
+        setTranslatedNews(newMap);
+        setTranslating(false);
+      }
+    }
   };
 
   // 전체 번역이 적용된 뉴스 목록
@@ -151,7 +193,12 @@ export default function HomePage() {
       </div>
 
       {/* 필터 */}
-      <NewsFilter active={activeSource} onChange={handleSourceChange} />
+      <NewsFilter
+        activeSource={activeSource}
+        onSourceChange={handleSourceChange}
+        activeCategory={activeCategory}
+        onCategoryChange={handleCategoryChange}
+      />
 
       {/* 에러 */}
       {error && (
@@ -189,10 +236,11 @@ export default function HomePage() {
           {hasMore && (
             <div className="flex justify-center pt-4">
               <button
-                onClick={() => setPage((p) => p + 1)}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-xl font-medium transition-colors"
+                onClick={handleLoadMore}
+                disabled={translating}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-xl font-medium transition-colors disabled:opacity-50"
               >
-                더 보기
+                {translating ? '번역 중...' : '더보기'}
               </button>
             </div>
           )}

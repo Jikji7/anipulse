@@ -1,7 +1,7 @@
 // Next.js API Route: RSS 뉴스 파싱 (서버사이드)
 import { NextResponse } from 'next/server';
 import Parser from 'rss-parser';
-import { RSS_FEEDS } from '@/lib/news';
+import { RSS_FEEDS, detectCategory } from '@/lib/news';
 import { NewsItem } from '@/lib/types';
 
 const parser = new Parser({
@@ -104,6 +104,7 @@ export async function GET() {
             source,
             date: item.pubDate || item.isoDate || new Date().toISOString(),
             thumbnail: extractThumbnail(item as unknown as Record<string, unknown>),
+            category: detectCategory(item.title || '', item.contentSnippet || item.content || item.summary || ''),
           }));
       })
     );
