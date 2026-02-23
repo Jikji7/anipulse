@@ -2,6 +2,8 @@
 
 애니메이션 뉴스와 제작사 정보를 한곳에서 모아볼 수 있는 웹사이트입니다.
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Jikji7/anipulse)
+
 ## 📋 주요 기능
 
 - **🗞️ 애니 뉴스 피드**: 최신 애니메이션 뉴스를 카드 형태로 표시

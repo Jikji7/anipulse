@@ -28,7 +28,7 @@ export default function RootLayout({
         {/* 푸터 */}
         <footer className="mt-16 border-t border-gray-800 py-8">
           <div className="max-w-7xl mx-auto px-4 text-center text-gray-500 text-sm">
-            <p>© 2024 AniPulse - 애니메이션 뉴스 & 제작사 정보</p>
+            <p>© {new Date().getFullYear()} AniPulse - 애니메이션 뉴스 & 제작사 정보</p>
             <p className="mt-1">
               데이터 제공: <a href="https://anilist.co" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300">AniList</a>
               {' & '}
