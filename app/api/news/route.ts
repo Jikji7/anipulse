@@ -14,6 +14,51 @@ const parser = new Parser({
   },
 });
 
+// 에피소드 업데이트 제목 패턴 (뉴스가 아닌 시청 링크)
+const EPISODE_PATTERNS = [
+  /- Episode \d/i,
+  /- \d+화/,
+  /Episode \d+/i,
+  /\(러시아어/,
+  /\(독일어/,
+  /\(영어 더빙\)/,
+  /Season \d+ - \d+/i,
+  /[\u0400-\u04FF]/, // 키릴 문자 (러시아어 등)
+  /[\u0600-\u06FF]/, // 아랍 문자
+];
+
+// 제목이 에피소드 업데이트인지 확인
+function isEpisodeTitle(title: string): boolean {
+  return EPISODE_PATTERNS.some((pattern) => pattern.test(title));
+}
+
+// HTML 태그 및 엔티티 제거
+function stripHtml(text: string): string {
+  // HTML 태그 반복 제거 (중첩 난독화 방지)
+  let result = text;
+  let prev = '';
+  while (result !== prev) {
+    prev = result;
+    result = result.replace(/<[^>]*>/g, '');
+  }
+  // HTML 엔티티를 단일 패스로 디코드 (이중 디코딩 방지)
+  result = result.replace(/&(amp|lt|gt|quot|apos|nbsp|#\d+|#x[\da-fA-F]+);/gi, (_match, entity) => {
+    switch (entity.toLowerCase()) {
+      case 'amp': return '&';
+      case 'lt': return '<';
+      case 'gt': return '>';
+      case 'quot': return '"';
+      case 'apos': return "'";
+      case 'nbsp': return ' ';
+      default:
+        if (entity.startsWith('#x')) return String.fromCharCode(parseInt(entity.slice(2), 16));
+        if (entity.startsWith('#')) return String.fromCharCode(parseInt(entity.slice(1), 10));
+        return _match;
+    }
+  });
+  return result.replace(/\s+/g, ' ').trim();
+}
+
 // 각 RSS 피드 아이템에서 썸네일 추출
 function extractThumbnail(item: Record<string, unknown>): string | undefined {
   if (item.mediaThumbnail && typeof item.mediaThumbnail === 'object') {
@@ -49,15 +94,17 @@ export async function GET() {
     const results = await Promise.allSettled(
       RSS_FEEDS.map(async ({ url, source }) => {
         const feed = await parser.parseURL(url);
-        return feed.items.map((item, idx) => ({
-          id: `${source}-${idx}-${Date.now()}`,
-          title: item.title || '제목 없음',
-          description: item.contentSnippet || item.content || item.summary || '',
-          link: item.link || '#',
-          source,
-          date: item.pubDate || item.isoDate || new Date().toISOString(),
-          thumbnail: extractThumbnail(item as unknown as Record<string, unknown>),
-        }));
+        return feed.items
+          .filter((item) => !isEpisodeTitle(item.title || ''))
+          .map((item, idx) => ({
+            id: `${source}-${idx}-${Date.now()}`,
+            title: item.title || '제목 없음',
+            description: stripHtml(item.contentSnippet || item.content || item.summary || ''),
+            link: item.link || '#',
+            source,
+            date: item.pubDate || item.isoDate || new Date().toISOString(),
+            thumbnail: extractThumbnail(item as unknown as Record<string, unknown>),
+          }));
       })
     );
 
