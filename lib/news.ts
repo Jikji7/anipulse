@@ -11,6 +11,12 @@ export const RSS_FEEDS = [
 // 제목/설명에서 카테고리 자동 분류
 export function detectCategory(title: string, description: string): NewsCategory {
   const text = (title + ' ' + description).toLowerCase();
+
+  // 게임 관련 키워드가 있고, 애니/만화/라노벨 키워드가 없으면 GAME으로 분류
+  const gameKeywords = /\b(game|gaming|console|playstation|ps[45]|xbox|nintendo|steam|pc game|developer walkthrough|gameplay|gamer)\b/;
+  const animeKeywords = /anime|animation|アニメ|manga|manhwa|manhua|light novel|\bnovel\b/;
+  if (gameKeywords.test(text) && !animeKeywords.test(text)) return 'GAME';
+
   if (/manga|manhwa|manhua|chapter|マンガ|漫画/.test(text)) return 'MANGA';
   if (/light novel|\bnovel\b|\bln\b|ライトノベル|라노벨/.test(text)) return 'LIGHTNOVEL';
   if (/anime|animation|episode|season|アニメ/.test(text)) return 'ANIME';

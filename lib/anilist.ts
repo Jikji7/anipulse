@@ -90,33 +90,24 @@ export async function getStudio(id: number) {
   return fetchAniList(query, { id });
 }
 
-// 여러 제작사 정보 가져오기 (GraphQL alias로 1회 요청, rate limit 회피)
+// 여러 제작사 정보 가져오기 (3개씩 그룹으로 나눠서 순차 호출, rate limit 회피)
 export async function getStudios(ids: number[]) {
-  const fragments = ids
-    .map(
-      (id, i) => `
-    studio${i}: Studio(id: ${id}) {
-      id
-      name
-      siteUrl
-      media(sort: POPULARITY_DESC, type: ANIME, isMain: true, perPage: 4) {
-        nodes {
-          id
-          title { romaji english native }
-          coverImage { large medium }
-          genres
-          averageScore
-          status
-          seasonYear
-        }
+  const studios: import('./types').Studio[] = [];
+  const chunkSize = 3;
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    const chunk = ids.slice(i, i + chunkSize);
+    const results = await Promise.allSettled(chunk.map((id) => getStudio(id)));
+    for (const r of results) {
+      if (r.status === 'fulfilled') {
+        studios.push(r.value.Studio);
       }
-    }`
-    )
-    .join('\n');
-
-  const query = `query { ${fragments} }`;
-  const data = await fetchAniList(query);
-  return Object.values(data) as import('./types').Studio[];
+    }
+    // 마지막 청크가 아니면 500ms 대기
+    if (i + chunkSize < ids.length) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
+  return studios;
 }
 
 // 애니메이션 검색
