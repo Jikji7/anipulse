@@ -1,5 +1,5 @@
 // 뉴스 카테고리 타입
-export type NewsCategory = 'ALL' | 'ANIME' | 'LIGHTNOVEL' | 'MANGA';
+export type NewsCategory = 'ALL' | 'ANIME' | 'LIGHTNOVEL' | 'MANGA' | 'GAME';
 
 // 뉴스 아이템 타입
 export interface NewsItem {

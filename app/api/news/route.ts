@@ -105,7 +105,8 @@ export async function GET() {
             date: item.pubDate || item.isoDate || new Date().toISOString(),
             thumbnail: extractThumbnail(item as unknown as Record<string, unknown>),
             category: detectCategory(item.title || '', item.contentSnippet || item.content || item.summary || ''),
-          }));
+          }))
+          .filter((item) => item.category !== 'GAME');
       })
     );
 
