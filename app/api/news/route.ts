@@ -34,16 +34,29 @@ function isEpisodeTitle(title: string): boolean {
 
 // HTML 태그 및 엔티티 제거
 function stripHtml(text: string): string {
-  return text
-    .replace(/<[^>]*>/g, '')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  // HTML 태그 반복 제거 (중첩 난독화 방지)
+  let result = text;
+  let prev = '';
+  while (result !== prev) {
+    prev = result;
+    result = result.replace(/<[^>]*>/g, '');
+  }
+  // HTML 엔티티를 단일 패스로 디코드 (이중 디코딩 방지)
+  result = result.replace(/&(amp|lt|gt|quot|apos|nbsp|#\d+|#x[\da-fA-F]+);/gi, (_match, entity) => {
+    switch (entity.toLowerCase()) {
+      case 'amp': return '&';
+      case 'lt': return '<';
+      case 'gt': return '>';
+      case 'quot': return '"';
+      case 'apos': return "'";
+      case 'nbsp': return ' ';
+      default:
+        if (entity.startsWith('#x')) return String.fromCharCode(parseInt(entity.slice(2), 16));
+        if (entity.startsWith('#')) return String.fromCharCode(parseInt(entity.slice(1), 10));
+        return _match;
+    }
+  });
+  return result.replace(/\s+/g, ' ').trim();
 }
 
 // 각 RSS 피드 아이템에서 썸네일 추출
