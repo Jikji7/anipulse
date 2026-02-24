@@ -10,7 +10,7 @@ export default function Navbar() {
   const links = [
     { href: '/', label: '뉴스' },
     { href: '/studios', label: '제작사' },
-    { href: '/search', label: '검색' },
+    { href: '/community', label: '커뮤니티' },
   ];
 
   return (
